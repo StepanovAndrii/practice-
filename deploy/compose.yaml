@@ -1,0 +1,44 @@
+services:
+  web:
+    build:
+        context: ..
+        dockerfile: Dockerfile
+    container_name: practice_web
+    env_file:
+      - ../.env
+    environment:
+      - POSTGRES_CONNECTION_STRING: 'postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@practice_postgres:5432/${POSTGRES_DATABASE}'
+    networks:
+      - web-database-network
+    ports:
+      - '8000:8000'
+    depends_on: 
+      database:
+        condition: service_healthy
+  
+  database:
+    image: postgres@sha256:9770878138a2e83abcb10856d30cc3f24dae0d317bb956db6ab9159de6c3c80d
+    container_name: practice_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ../.env
+    environment:
+      - POSTGRES_USER='${POSTGRES_USER}'
+      - POSTGRES_PASSWORD='${POSTGRES_PASSWORD}'
+      - POSTGRES_DB='${POSTGRES_DATABASE}'
+    healthcheck:
+      test: ['CMD', 'ps_isready', '-U', 'postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - web-database-network
+
+networks:
+  web-database-network:
+    driver: bridge
+
+volumes:
+  - postgres_data
