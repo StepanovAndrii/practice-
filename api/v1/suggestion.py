@@ -1,18 +1,15 @@
 from fastapi import APIRouter
 
-router = APIRouter(
-    prefix='/practice/sentences/{sentence_id}/suggestion',
-    tags=['suggestion']
-)
+router = APIRouter()
 
-@router.post('/')
+@router.post('')
 async def create_suggestion(sentence_id: int):
     return {'': ''}
 
-@router.get('/')
+@router.get('')
 async def get_suggestion(sentence_id: int):
     return {'': ''}
 
-@router.patch('/')
+@router.patch('')
 async def partial_update_suggestion(sentence_id: int):
     return {'': ''}

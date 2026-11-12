@@ -1,26 +1,26 @@
-from os import getenv
+import os
 
+from models.vocabulary import Vocabulary
+from models.vocabulary_item import VocabularyItem
+from models.item_metadata import ItemMetadata
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from database import Base
+from dotenv import load_dotenv
 
 from alembic import context
 
-from sqlmodel import SQLModel
-from src.app.core.models.user import User #type: ignore
-from src.app.core.models.item import Item #type: ignore
-from src.app.core.models.item_metadata import ItemMetadata #type: ignore
-from src.app.core.models.vocabulary import Vocabulary #type: ignore
-
+load_dotenv()
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-connection_string = getenv('POSTGRES_CONNECTION_STRING')
-if connection_string:
-    connection_string = connection_string.replace('+asyncpg', '')
-    config.set_main_option('sqlalchemy.url', connection_string)
+postgresql_connection_string = os.getenv('POSTGRES_CONNECTION')
+if postgresql_connection_string:
+    postgresql_connection_string = postgresql_connection_string.replace('asyncpg', 'psycopg2')
+    config.set_main_option('sqlalchemy.url', postgresql_connection_string)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -31,7 +31,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = SQLModel.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

@@ -1,15 +1,12 @@
 from fastapi import APIRouter
 
-router = APIRouter(
-    prefix='/vocabulary/{vocabulary_id}/items',
-    tags=['vocabulary item']
-)
+router = APIRouter()
 
-@router.post('/')
+@router.post('')
 async def create_vocabulary_items(vocabulary_id: int):
     return {'message': 'Hello!'}
 
-@router.get('/')
+@router.get('')
 async def get_vocabulary_items(vocabulary_id: int):
     return {'message': 'Hello!'}
 
