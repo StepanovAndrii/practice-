@@ -92,6 +92,23 @@ async def get_vocabularies(database: Annotated[AsyncSession, Depends(get_session
         in result.mappings()
     ]
     
-# @router.delete('/{vocabulary_id}')
-# async def delete_vocabulary(vocabulary_id: UUID):
-    
+@router.delete('/{vocabulary_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vocabulary(
+    vocabulary_id: UUID,
+    database: Annotated[AsyncSession, Depends(get_session_async)]
+):
+    result = await database.execute(
+        select(Vocabulary)
+        .where(Vocabulary.id == vocabulary_id)
+    )
+
+    existing_vocabulary = result.scalars().first()
+
+    if not existing_vocabulary:
+       raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Vocabulary with id {vocabulary_id} doesn\'t exists'
+        )
+
+    await database.delete(existing_vocabulary)
+    await database.commit()
