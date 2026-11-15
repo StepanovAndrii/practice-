@@ -1,8 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID, uuid4
 
-from .vocabulary_item import VocabularyItemResponse
-
 class VocabularyBase(BaseModel):
     name: str
 
@@ -13,10 +11,6 @@ class VocabularyCreate(VocabularyBase):
     )
 
 class VocabularyBaseResponse(VocabularyBase):
-    model_config = ConfigDict(
-        from_attributes=True
-    )
-    
     id: UUID
 
 class VocabularyCreateResponse(VocabularyBaseResponse):

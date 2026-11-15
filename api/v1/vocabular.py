@@ -47,45 +47,51 @@ async def create_vocabulary(
 
     return new_vocabulary
 
-@router.get('',
-            response_model=list[VocabularyResponse])
+@router.get('', response_model=list[VocabularyResponse])
 async def get_vocabularies(database: Annotated[AsyncSession, Depends(get_session_async)]):
-    total_items_query = select(
-        func.count(VocabularyItem.id)
-    ).where(
-        Vocabulary.id == VocabularyItem.vocabulary_id
-    ).scalar_subquery().label(
-        'total_items'
+    item_count_query = (
+        select(
+            VocabularyItem.vocabulary_id,
+            func.count(VocabularyItem.id).label('total_items')
+        )
+        .group_by(VocabularyItem.vocabulary_id)
+        .subquery()
     )
 
-    due_count_query = select(
-        func.count(VocabularyItem.id)
-    ).where(
-        VocabularyItem.item_metadata.has(
-            ItemMetadata.next_repetition_date <= date.today()
-        ),
-        VocabularyItem.vocabulary_id == Vocabulary.id
-    ).scalar_subquery().label(
-        'due_count'
+    repetition_count_query = (
+        select(
+            VocabularyItem.vocabulary_id,
+            func.count(VocabularyItem.id).label('due_count')
+        )
+        .outerjoin(VocabularyItem.item_metadata)
+        .where(ItemMetadata.next_repetition_date <= date.today())
+        .group_by(VocabularyItem.vocabulary_id)
+        .subquery()
     )
 
     result = await database.execute(
         select(
-            Vocabulary,
-            total_items_query,
-            due_count_query
+            Vocabulary.id,
+            Vocabulary.name,
+            func.coalesce(item_count_query.c.total_items, 0).label('total_items'),
+            func.coalesce(repetition_count_query.c.due_count, 0).label('due_count')
+        )
+        .outerjoin(
+            item_count_query,
+            Vocabulary.id == item_count_query.c.vocabulary_id
+        )
+        .outerjoin(
+            repetition_count_query,
+            Vocabulary.id == repetition_count_query.c.vocabulary_id
         )
     )
 
     return [
-        VocabularyResponse.model_validate({
-            **inspect(row.Vocabulary).dict,
-            'total_items': row.total_items,
-            'due_count': row.due_count
-        }) for row in result.mappings()
+        VocabularyResponse.model_validate(row) 
+        for row
+        in result.mappings()
     ]
     
-
 # @router.delete('/{vocabulary_id}')
 # async def delete_vocabulary(vocabulary_id: UUID):
     
