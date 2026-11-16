@@ -1,4 +1,4 @@
-from sqlalchemy import UUID as SQLALCHEMY_UUID, String, DateTime, ForeignKey
+from sqlalchemy import UUID as SQLALCHEMY_UUID, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -34,8 +34,11 @@ class VocabularyItem(Base):
         nullable=False,
         index=True
     )
-
     item_metadata: Mapped[ItemMetadata] = relationship(
         uselist=False,
         cascade='all, delete-orphan'
+    )
+
+    __table_args__ = (
+        UniqueConstraint(term, vocabulary_id, name='uq_vocabulary_item_term_vocabulary_id'),
     )
