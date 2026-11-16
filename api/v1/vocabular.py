@@ -5,7 +5,6 @@ from schemas.vocabulary import VocabularyCreate, VocabularyCreateResponse, Vocab
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from sqlalchemy.inspection import inspect
 from database import get_session_async
 from models.vocabulary import Vocabulary
 from models.vocabulary_item import VocabularyItem
@@ -86,11 +85,7 @@ async def get_vocabularies(database: Annotated[AsyncSession, Depends(get_session
         )
     )
 
-    return [
-        VocabularyResponse.model_validate(row) 
-        for row
-        in result.mappings()
-    ]
+    return result.mappings().all()
     
 @router.delete('/{vocabulary_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vocabulary(

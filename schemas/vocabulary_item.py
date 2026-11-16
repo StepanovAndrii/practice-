@@ -12,8 +12,6 @@ class VocabularyItemCreate(VocabularyItemBase):
         str_strip_whitespace=True
     )
 
-    vocabulary_id: UUID
-
 class VocabularyItemResponse(VocabularyItemBase):
     model_config = ConfigDict(
         from_attributes=True
