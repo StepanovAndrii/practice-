@@ -75,7 +75,8 @@ async def get_vocabulary_items(
     )).first()
 
     if not vocabulary_exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f'Vocabulary with id {vocabulary_id} is not found')
     
     return (await database.scalars(
         select(VocabularyItem)

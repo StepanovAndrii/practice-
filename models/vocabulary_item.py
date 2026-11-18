@@ -29,7 +29,7 @@ class VocabularyItem(Base):
     )
     vocabulary_id: Mapped[UUID] = mapped_column(
         SQLALCHEMY_UUID,
-        ForeignKey('vocabularies.id'),
+        ForeignKey('vocabularies.id', ondelete='CASCADE'),
         nullable=False,
         index=True
     )

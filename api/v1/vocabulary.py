@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from schemas.vocabulary import VocabularyCreate, VocabularyCreateResponse, VocabularyResponse, VocabularyPartiallyUpdate
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, delete
 from database import get_session_async
 from models.vocabulary import Vocabulary
 from models.vocabulary_item import VocabularyItem
@@ -136,5 +136,8 @@ async def delete_vocabulary(
             detail=f'Vocabulary with id {vocabulary_id} doesn\'t exists'
         )
 
-    await database.delete(existing_vocabulary)
+    await database.execute(
+        delete(Vocabulary)
+        .where(Vocabulary.id == vocabulary_id)
+    )
     await database.commit()
