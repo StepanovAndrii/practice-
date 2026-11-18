@@ -18,5 +18,6 @@ class Vocabulary(Base):
         nullable=False
     )
     items: Mapped[list[VocabularyItem]] = relationship(
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan',
+        passive_deletes=True
     )

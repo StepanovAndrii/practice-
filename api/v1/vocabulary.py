@@ -1,10 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from schemas.vocabulary import VocabularyCreate, VocabularyCreateResponse, VocabularyResponse
+from schemas.vocabulary import VocabularyCreate, VocabularyCreateResponse, VocabularyResponse, VocabularyPartiallyUpdate
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, update, func
 from database import get_session_async
 from models.vocabulary import Vocabulary
 from models.vocabulary_item import VocabularyItem
@@ -86,18 +86,49 @@ async def get_vocabularies(database: Annotated[AsyncSession, Depends(get_session
     )
 
     return result.mappings().all()
-    
+
+@router.patch('/{vocabulary_id}')
+async def partially_update_vocabulary(
+    vocabulary_id: UUID,
+    data_to_update: VocabularyPartiallyUpdate,
+    database: Annotated[AsyncSession, Depends(get_session_async)]
+):
+    existing_vocabulary = await database.scalar(
+        select(
+            select(1)
+            .where(Vocabulary.id == vocabulary_id)
+            .exists()
+        )
+    )
+
+    if not existing_vocabulary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Vocabulary with id {vocabulary_id} doesn\'t exists'
+        )
+
+    updated_vocabulary = await database.scalar(
+        update(Vocabulary)
+        .where(Vocabulary.id == vocabulary_id)
+        .values(**data_to_update.model_dump(exclude_unset=True))
+        .returning(Vocabulary)
+    )
+
+    await database.commit()
+    return updated_vocabulary
+
 @router.delete('/{vocabulary_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vocabulary(
     vocabulary_id: UUID,
     database: Annotated[AsyncSession, Depends(get_session_async)]
 ):
-    result = await database.execute(
-        select(Vocabulary)
-        .where(Vocabulary.id == vocabulary_id)
+    existing_vocabulary = await database.scalar(
+        select(
+            select(1)
+            .where(Vocabulary.id == vocabulary_id)
+            .exists()
+        )
     )
-
-    existing_vocabulary = result.scalars().first()
 
     if not existing_vocabulary:
        raise HTTPException(

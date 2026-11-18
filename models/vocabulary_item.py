@@ -1,8 +1,8 @@
-from sqlalchemy import UUID as SQLALCHEMY_UUID, String, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import UUID as SQLALCHEMY_UUID, String, DateTime, ForeignKey, UniqueConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
-from uuid import UUID, uuid4
+from uuid import UUID
 from datetime import datetime, UTC
 
 from models.item_metadata import ItemMetadata
@@ -10,9 +10,8 @@ from models.item_metadata import ItemMetadata
 class VocabularyItem(Base):
     __tablename__ = 'vocabulary_items'
 
-    id: Mapped[UUID] = mapped_column(
-        SQLALCHEMY_UUID,
-        default=uuid4,
+    id: Mapped[int] = mapped_column(
+        Integer,
         primary_key=True
     )
     term: Mapped[str] = mapped_column(
@@ -36,7 +35,8 @@ class VocabularyItem(Base):
     )
     item_metadata: Mapped[ItemMetadata] = relationship(
         uselist=False,
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan',
+        passive_deletes=True
     )
 
     __table_args__ = (

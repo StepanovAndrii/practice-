@@ -4,11 +4,17 @@ from uuid import UUID, uuid4
 class VocabularyBase(BaseModel):
     name: str
 
-class VocabularyCreate(VocabularyBase):
+class VocabularyInputBase(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
         str_strip_whitespace=True
     )
+
+class VocabularyCreate(VocabularyBase, VocabularyInputBase):
+    pass
+
+class VocabularyPartiallyUpdate(VocabularyInputBase):
+    name: str
 
 class VocabularyBaseResponse(VocabularyBase):
     id: UUID

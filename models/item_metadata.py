@@ -1,7 +1,6 @@
 from database import Base
-from uuid import UUID, uuid4
 from datetime import date
-from sqlalchemy import UUID as SQLALCHEMY_UUID, ForeignKey, Date, Float, Integer, CheckConstraint
+from sqlalchemy import ForeignKey, Date, Float, Integer, CheckConstraint
 from sqlalchemy.orm import mapped_column, Mapped
 
 class ItemMetadata(Base):
@@ -12,9 +11,9 @@ class ItemMetadata(Base):
         CheckConstraint('inter_repetition>=1', name='check_repetition_min')
     )
 
-    item_id: Mapped[UUID] = mapped_column(
-        SQLALCHEMY_UUID,
-        ForeignKey('vocabulary_items.id'),
+    item_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('vocabulary_items.id', ondelete='CASCADE'),
         primary_key=True
     )
     easiness_factor: Mapped[float] = mapped_column(

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from uuid import UUID
 from database import get_session_async
 from schemas.vocabulary_item import VocabularyItemCreate
 from models.vocabulary_item import VocabularyItem
 from models.vocabulary import Vocabulary
+from models.item_metadata import ItemMetadata
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ async def create_vocabulary_items(
     vocabulary_item: VocabularyItemCreate,
     database: Annotated[AsyncSession, Depends(get_session_async)]
 ):
-    exists_vocabulary = (await database.scalars(
+    vocabulary_exists = (await database.scalars(
         select(
             select(1)
             .where(
@@ -26,10 +27,10 @@ async def create_vocabulary_items(
         )
     )).first()
 
-    if not exists_vocabulary:
+    if not vocabulary_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
-    exists_vocabulary_item = (await database.scalars(
+    vocabulary_item_exists = (await database.scalars(
         select(
             select(1)
             .where(
@@ -39,7 +40,7 @@ async def create_vocabulary_items(
         )
     )).first()
 
-    if exists_vocabulary_item:
+    if vocabulary_item_exists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail='The same vocabulary item already exists'
@@ -47,10 +48,12 @@ async def create_vocabulary_items(
 
     new_vocabulary_item = VocabularyItem(
         vocabulary_id = vocabulary_id,
+        item_metadata = ItemMetadata(),
         **vocabulary_item.model_dump()
     )
 
     database.add(new_vocabulary_item)
+
     await database.commit()
     await database.refresh(new_vocabulary_item)
 
@@ -62,7 +65,7 @@ async def get_vocabulary_items(
     vocabulary_id: UUID,
     database: Annotated[AsyncSession, Depends(get_session_async)]
 ):
-    exists_vocabulary = (await database.scalars(
+    vocabulary_exists = (await database.scalars(
         select(
             select(1)
             .where(
@@ -71,7 +74,7 @@ async def get_vocabulary_items(
         )
     )).first()
 
-    if not exists_vocabulary:
+    if not vocabulary_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     return (await database.scalars(
@@ -79,6 +82,45 @@ async def get_vocabulary_items(
         .where(VocabularyItem.vocabulary_id == vocabulary_id)
     )).all()
 
-@router.delete('/{item_id}')
-async def delete_vocabulary_item(vocabulary_id: UUID, item_id: int):
-    return {'': ''}
+@router.delete(
+        '/{item_id}',
+        status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vocabulary_item(
+    vocabulary_id: UUID,
+    item_id: int,
+    database: Annotated[AsyncSession, Depends(get_session_async)]
+):
+    vocabulary_exists = await database.scalar(
+        select(
+            select(1)
+            .where(Vocabulary.id == vocabulary_id)
+            .exists()
+        )
+    )
+
+    if not vocabulary_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Vocabulary with id {vocabulary_id} doesn\'t exist')
+
+    item_exists = await database.scalar(
+        select(
+            select(1)
+            .where(VocabularyItem.id == item_id,
+                   VocabularyItem.vocabulary_id == vocabulary_id)
+            .exists()
+        )
+    )
+
+    if not item_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Vocabulary item with id {item_id} doesn\'t exist'
+        )
+
+    await database.execute(
+        delete(VocabularyItem)
+        .where(VocabularyItem.id == item_id)
+    )
+
+    await database.commit()
